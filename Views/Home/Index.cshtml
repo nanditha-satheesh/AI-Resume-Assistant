@@ -1,0 +1,85 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<!-- Hero Section -->
+<div class="text-center text-white py-5" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+    <div class="container py-4">
+        <h1 class="display-3 fw-bold mb-3">AI Resume Assistant</h1>
+        <p class="lead fs-5 mb-4 mx-auto" style="max-width: 600px;">
+            Upload your resume and get AI-powered feedback, cover letters, skill suggestions, and more — all for free.
+        </p>
+        <a class="btn btn-light btn-lg px-5 py-2 fw-semibold shadow" asp-controller="Resume" asp-action="Index">
+            🚀 Get Started
+        </a>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container py-5">
+    <h2 class="text-center mb-2 fw-bold">What Can It Do?</h2>
+    <p class="text-center text-muted mb-5">Powered by advanced AI to help you land your dream job.</p>
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm text-center hover-card">
+                <div class="card-body p-4">
+                    <div class="fs-1 mb-3">📄</div>
+                    <h5 class="fw-bold">Upload Resume</h5>
+                    <p class="card-text text-muted small">Upload your PDF resume and extract content automatically using iText7.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm text-center hover-card">
+                <div class="card-body p-4">
+                    <div class="fs-1 mb-3">🤖</div>
+                    <h5 class="fw-bold">AI Chat</h5>
+                    <p class="card-text text-muted small">Ask questions and get professional advice in a real-time chat interface.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm text-center hover-card">
+                <div class="card-body p-4">
+                    <div class="fs-1 mb-3">🎭</div>
+                    <h5 class="fw-bold">Multiple Personas</h5>
+                    <p class="card-text text-muted small">Get feedback from HR, Recruiter, or Career Coach perspectives.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm text-center hover-card">
+                <div class="card-body p-4">
+                    <div class="fs-1 mb-3">⬇️</div>
+                    <h5 class="fw-bold">Download</h5>
+                    <p class="card-text text-muted small">Download generated cover letters and AI-written content as text files.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works -->
+<div class="py-5" style="background-color: #f8f9fa;">
+    <div class="container">
+        <h2 class="text-center mb-5 fw-bold">How It Works</h2>
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; font-size: 1.5rem;">1</div>
+                <h5 class="fw-bold">Upload Your Resume</h5>
+                <p class="text-muted">Select a PDF file and we'll extract the text instantly.</p>
+            </div>
+            <div class="col-md-4">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; font-size: 1.5rem;">2</div>
+                <h5 class="fw-bold">Choose AI Persona</h5>
+                <p class="text-muted">Pick from Resume Writer, HR, Recruiter, or Career Coach.</p>
+            </div>
+            <div class="col-md-4">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; font-size: 1.5rem;">3</div>
+                <h5 class="fw-bold">Get AI Feedback</h5>
+                <p class="text-muted">Ask questions and receive professional, actionable advice.</p>
+            </div>
+        </div>
+    </div>
+</div>
+

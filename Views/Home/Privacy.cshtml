@@ -1,0 +1,89 @@
+﻿@{
+    ViewData["Title"] = "Privacy Policy";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="mb-4">🔒 Privacy Policy</h1>
+            <p class="text-muted">Last updated: @DateTime.UtcNow.ToString("MMMM dd, yyyy")</p>
+            <hr />
+
+            <section class="mb-4">
+                <h4>1. Introduction</h4>
+                <p>
+                    AI Resume Assistant ("we", "our", "the app") is committed to protecting your privacy.
+                    This policy explains how we handle your data when you use our resume analysis service.
+                </p>
+            </section>
+
+            <section class="mb-4">
+                <h4>2. Data We Collect</h4>
+                <ul>
+                    <li><strong>Resume Content:</strong> The text extracted from PDF files you upload.</li>
+                    <li><strong>Chat Messages:</strong> Questions you ask and AI responses generated.</li>
+                    <li><strong>Session Identifier:</strong> A temporary cookie to maintain your session.</li>
+                </ul>
+            </section>
+
+            <section class="mb-4">
+                <h4>3. How We Use Your Data</h4>
+                <ul>
+                    <li>Resume text is sent to a third-party AI service (Groq/Google Gemini) to generate responses to your queries.</li>
+                    <li>Chat history is stored temporarily in server memory to provide a continuous conversation experience.</li>
+                    <li>We do <strong>not</strong> store your resume or chat data permanently on disk or in a database.</li>
+                </ul>
+            </section>
+
+            <section class="mb-4">
+                <h4>4. Data Retention</h4>
+                <p>
+                    All resume content and chat history are stored <strong>in-memory only</strong> and are automatically
+                    deleted when the application restarts or when you clear your session. Session cookies expire after 24 hours.
+                </p>
+            </section>
+
+            <section class="mb-4">
+                <h4>5. Third-Party Services</h4>
+                <p>
+                    We use third-party AI APIs to process your requests. When you ask a question, your resume text and
+                    query are sent to the configured AI provider. Please review their privacy policies:
+                </p>
+                <ul>
+                    <li><a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">Groq Privacy Policy</a></li>
+                    <li><a href="https://ai.google.dev/terms" target="_blank" rel="noopener">Google AI Terms</a></li>
+                </ul>
+            </section>
+
+            <section class="mb-4">
+                <h4>6. Data Security</h4>
+                <ul>
+                    <li>All communication uses HTTPS encryption.</li>
+                    <li>API keys are stored securely using .NET User Secrets (not in source code).</li>
+                    <li>No user accounts or personal information are collected beyond resume content.</li>
+                </ul>
+            </section>
+
+            <section class="mb-4">
+                <h4>7. Your Rights</h4>
+                <p>You can at any time:</p>
+                <ul>
+                    <li><strong>Clear your data</strong> using the "Clear Session" button in the Resume Assistant.</li>
+                    <li><strong>Delete cookies</strong> through your browser settings.</li>
+                    <li><strong>Stop using the service</strong> — no data persists after your session ends.</li>
+                </ul>
+            </section>
+
+            <section class="mb-4">
+                <h4>8. Contact</h4>
+                <p>
+                    If you have questions about this privacy policy, please contact the application administrator.
+                </p>
+            </section>
+
+            <div class="text-center mt-5">
+                <a class="btn btn-primary" asp-controller="Resume" asp-action="Index">← Back to Resume Assistant</a>
+            </div>
+        </div>
+    </div>
+</div>
