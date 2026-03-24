@@ -8,6 +8,8 @@ Upload your resume (PDF) and get instant AI-powered feedback — summary improve
 ![C#](https://img.shields.io/badge/C%23-14-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+🌐 **Live Demo:** [https://ai-resume-assistant-l1qz.onrender.com](https://ai-resume-assistant-l1qz.onrender.com)
+
 ---
 
 ## ✨ Features
