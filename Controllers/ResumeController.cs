@@ -44,6 +44,7 @@ public class ResumeController : Controller
     /// Upload a PDF resume, extract text, and store it in the session.
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> UploadResume(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -95,6 +96,7 @@ public class ResumeController : Controller
     /// Send a user question along with resume context to OpenAI and return the response.
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AskAI([FromBody] AskAiRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question))
@@ -119,8 +121,12 @@ public class ResumeController : Controller
                 Content = request.Question
             });
 
+            // Validate prompt mode against allowed values
+            var allowedModes = ResumePromptBuilder.GetAvailableModes().Keys;
+            var promptMode = allowedModes.Contains(request.PromptMode ?? "Default") ? request.PromptMode! : "Default";
+
             // Build prompts
-            var systemPrompt = ResumePromptBuilder.BuildSystemPrompt(request.PromptMode ?? "Default");
+            var systemPrompt = ResumePromptBuilder.BuildSystemPrompt(promptMode);
             var userPrompt = ResumePromptBuilder.BuildUserPrompt(resumeText, request.Question);
 
             // Call OpenAI
@@ -162,6 +168,7 @@ public class ResumeController : Controller
     /// Clears the current session (resume + chat history).
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public IActionResult ClearSession()
     {
         var sessionId = GetOrCreateSessionId();
@@ -201,6 +208,7 @@ public class ResumeController : Controller
         Response.Cookies.Append(sessionCookieName, sessionId, new CookieOptions
         {
             HttpOnly = true,
+            Secure = true,
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddHours(24)
         });

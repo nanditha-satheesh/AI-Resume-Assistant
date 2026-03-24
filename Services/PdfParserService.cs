@@ -8,16 +8,19 @@ public class PdfParserService : IPdfParserService
 {
     public Task<string> ExtractTextAsync(Stream pdfStream)
     {
-        using var pdfReader = new PdfReader(pdfStream);
-        using var pdfDocument = new PdfDocument(pdfReader);
-
-        var text = new StringBuilder();
-        for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
+        return Task.Run(() =>
         {
-            var page = pdfDocument.GetPage(i);
-            text.AppendLine(PdfTextExtractor.GetTextFromPage(page));
-        }
+            using var pdfReader = new PdfReader(pdfStream);
+            using var pdfDocument = new PdfDocument(pdfReader);
 
-        return Task.FromResult(text.ToString().Trim());
+            var text = new StringBuilder();
+            for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
+            {
+                var page = pdfDocument.GetPage(i);
+                text.AppendLine(PdfTextExtractor.GetTextFromPage(page));
+            }
+
+            return text.ToString().Trim();
+        });
     }
 }

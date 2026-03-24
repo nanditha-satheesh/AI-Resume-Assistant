@@ -5,6 +5,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Configure anti-forgery to accept tokens via header (for AJAX/JSON requests)
+builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
+
+// Configure upload size limit (5 MB to match controller validation)
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 5 * 1024 * 1024;
+});
+
 // Register application services
 builder.Services.AddSingleton<IPdfParserService, PdfParserService>();
 builder.Services.AddSingleton<IResumeSessionService, ResumeSessionService>();

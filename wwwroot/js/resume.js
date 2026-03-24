@@ -2,6 +2,12 @@
 // AI Resume Assistant - Client-side JavaScript
 // =============================================
 
+// Read the anti-forgery token for CSRF protection
+function getAntiForgeryToken() {
+    var tokenField = document.querySelector('input[name="__RequestVerificationToken"]');
+    return tokenField ? tokenField.value : '';
+}
+
 // Upload resume PDF via AJAX
 function uploadResume() {
     var fileInput = document.getElementById('resumeFile');
@@ -19,6 +25,7 @@ function uploadResume() {
 
     var formData = new FormData();
     formData.append('file', file);
+    formData.append('__RequestVerificationToken', getAntiForgeryToken());
 
     var btn = document.getElementById('btnUpload');
     var spinner = document.getElementById('uploadSpinner');
@@ -35,6 +42,12 @@ function uploadResume() {
             if (response.success) {
                 showUploadStatus(response.message, 'success');
                 document.getElementById('resumeStatus').innerHTML = '✅ Resume loaded';
+                // Update mobile status if present
+                var mobileStatus = document.getElementById('resumeStatusMobile');
+                if (mobileStatus) {
+                    mobileStatus.innerHTML = '✅ Resume loaded';
+                    mobileStatus.className = 'text-success';
+                }
                 // Hide welcome message if present
                 var welcome = document.getElementById('welcomeMessage');
                 if (welcome) welcome.remove();
@@ -78,6 +91,7 @@ function askAI() {
         url: '/Resume/AskAI',
         type: 'POST',
         contentType: 'application/json',
+        headers: { 'X-CSRF-TOKEN': getAntiForgeryToken() },
         data: JSON.stringify({ question: question, promptMode: promptMode }),
         success: function (response) {
             if (response.success) {
@@ -100,6 +114,12 @@ function askAI() {
 
 // Send a quick action
 function sendQuickAction(text) {
+    // Close the sidebar offcanvas on mobile
+    var sidebar = document.getElementById('sidebarMenu');
+    var offcanvasInstance = bootstrap.Offcanvas.getInstance(sidebar);
+    if (offcanvasInstance) {
+        offcanvasInstance.hide();
+    }
     document.getElementById('userQuestion').value = text;
     askAI();
 }
@@ -155,6 +175,7 @@ function clearSession() {
     $.ajax({
         url: '/Resume/ClearSession',
         type: 'POST',
+        headers: { 'X-CSRF-TOKEN': getAntiForgeryToken() },
         success: function (response) {
             if (response.success) {
                 location.reload();
