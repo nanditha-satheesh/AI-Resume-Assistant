@@ -83,6 +83,8 @@ function askAI() {
     // Show loading
     var loading = document.getElementById('loadingIndicator');
     loading.classList.remove('d-none');
+    var chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
     var btn = document.getElementById('btnSend');
     btn.disabled = true;

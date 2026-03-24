@@ -8,7 +8,7 @@
 
 <style>
     /* Make the resume page fill remaining viewport below the navbar */
-    .chat-layout { height: calc(100vh - 56px); }
+    .chat-layout { height: calc(100vh - 56px); overflow: hidden; }
 
     /* Sidebar width on desktop */
     @@media (min-width: 768px) {
@@ -106,7 +106,7 @@
         </div>
 
         <!-- Chat Area -->
-        <div class="flex-grow-1 d-flex flex-column" style="background-color: #e5e5ea; min-width: 0;">
+        <div class="flex-grow-1 d-flex flex-column chat-area" style="background-color: #e5e5ea;">
             <!-- Mobile toolbar with sidebar toggle -->
             <div class="d-md-none d-flex align-items-center gap-2 px-3 py-2 border-bottom" style="background: white;">
                 <button class="btn btn-sm btn-outline-primary" type="button"
@@ -119,7 +119,7 @@
             </div>
 
             <!-- Chat Messages -->
-            <div class="flex-grow-1 overflow-auto p-4" id="chatMessages">
+            <div class="flex-grow-1 p-4" id="chatMessages">
                 @if (!chatHistory.Any())
                 {
                     <div class="text-center mt-5" id="welcomeMessage">
@@ -159,15 +159,15 @@
                         }
                     }
                 }
-            </div>
 
-            <!-- Loading Indicator -->
-            <div class="px-4 d-none" id="loadingIndicator">
-                <div class="d-flex align-items-center mb-2">
-                    <div class="bg-white rounded-4 p-3 shadow-sm">
-                        <div class="d-flex align-items-center text-muted">
-                            <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
-                            <span>AI is thinking...</span>
+                <!-- Loading Indicator -->
+                <div class="d-none" id="loadingIndicator">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="bg-white rounded-4 p-3 shadow-sm">
+                            <div class="d-flex align-items-center text-muted">
+                                <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
+                                <span>AI is thinking...</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -38,6 +38,25 @@ body {
   word-wrap: break-word;
 }
 
+/* Constrain the chat area so flex children don't exceed viewport */
+.chat-area {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Prevent chat bubbles from overflowing the chat area */
+#chatMessages {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#chatMessages .d-flex > div {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
 /* Scrollbar styling for chat area */
 #chatMessages::-webkit-scrollbar {
   width: 6px;
