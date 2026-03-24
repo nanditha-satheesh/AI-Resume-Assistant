@@ -34,8 +34,73 @@ body {
 
 /* Chat message text formatting */
 .ai-response {
-  line-height: 1.6;
+  line-height: 1.7;
   word-wrap: break-word;
+}
+
+.ai-response h1, .ai-response h2, .ai-response h3,
+.ai-response h4, .ai-response h5, .ai-response h6 {
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 0.3rem;
+}
+
+.ai-response h3 { font-size: 1.15rem; }
+.ai-response h4 { font-size: 1.05rem; }
+
+.ai-response p {
+  margin-bottom: 0.6rem;
+}
+
+.ai-response ul, .ai-response ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.ai-response li {
+  margin-bottom: 0.3rem;
+}
+
+.ai-response strong {
+  color: #0f3460;
+}
+
+.ai-response blockquote {
+  border-left: 3px solid #0f3460;
+  padding: 0.4rem 0.8rem;
+  margin: 0.6rem 0;
+  background-color: #f8f9fa;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.ai-response code {
+  background-color: #f1f3f5;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+
+.ai-response pre {
+  background-color: #1a1a2e;
+  color: #e2e8f0;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.ai-response pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.ai-response hr {
+  border: none;
+  border-top: 1px solid #dee2e6;
+  margin: 0.8rem 0;
 }
 
 /* Constrain the chat area so flex children don't exceed viewport */

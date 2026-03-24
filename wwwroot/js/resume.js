@@ -2,6 +2,16 @@
 // AI Resume Assistant - Client-side JavaScript
 // =============================================
 
+// Render server-side Markdown messages on page load
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.ai-response-raw').forEach(function (el) {
+        var raw = el.getAttribute('data-raw');
+        if (raw) {
+            el.innerHTML = renderMarkdown(raw);
+        }
+    });
+});
+
 // Read the anti-forgery token for CSRF protection
 function getAntiForgeryToken() {
     var tokenField = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -148,7 +158,7 @@ function appendMessage(role, content) {
     } else if (role === 'assistant') {
         bubble.className = 'bg-white rounded-4 p-3 shadow-sm';
         bubble.innerHTML = '<div class="small fw-bold text-primary mb-1">🤖 AI Assistant</div>' +
-            '<div class="ai-response" style="white-space: pre-wrap;">' + escapeHtml(content) + '</div>';
+            '<div class="ai-response">' + renderMarkdown(content) + '</div>';
     } else {
         // error
         bubble.className = 'bg-danger-subtle border border-danger rounded-4 p-3';
@@ -208,4 +218,14 @@ function escapeHtml(text) {
     var div = document.createElement('div');
     div.appendChild(document.createTextNode(text));
     return div.innerHTML;
+}
+
+// Render Markdown to styled HTML using marked.js
+function renderMarkdown(text) {
+    if (typeof marked !== 'undefined') {
+        marked.setOptions({ breaks: true, gfm: true });
+        return marked.parse(text);
+    }
+    // Fallback: escape and preserve whitespace
+    return '<div style="white-space: pre-wrap;">' + escapeHtml(text) + '</div>';
 }
