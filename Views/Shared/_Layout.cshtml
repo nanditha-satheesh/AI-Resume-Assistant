@@ -9,6 +9,13 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AIResumeAssistant.styles.css" asp-append-version="true" />
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function () {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
 <body class="d-flex flex-column min-vh-100">
     <header>
@@ -33,6 +40,9 @@
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">🔒 Privacy</a>
                         </li>
                     </ul>
+                    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle night mode">
+                        🌙
+                    </button>
                 </div>
             </div>
         </nav>

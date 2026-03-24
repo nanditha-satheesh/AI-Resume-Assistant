@@ -18,6 +18,7 @@ Upload your resume (PDF) and get instant AI-powered feedback — summary improve
 - **Quick Actions** — One-click prompts for common tasks
 - **Download Responses** — Save AI-generated cover letters and feedback
 - **Session Management** — In-memory chat history with session-based storage
+- **Night Mode** — Toggle dark/light theme with preference saved in localStorage
 - **Responsive UI** — Modern Bootstrap 5 design with gradient theme
 
 ## 🛠️ Tech Stack
@@ -34,6 +35,9 @@ Upload your resume (PDF) and get instant AI-powered feedback — summary improve
 
 ```
 AIResumeAssistant/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml              # GitHub Actions → Azure App Service
 ├── Controllers/
 │   ├── HomeController.cs           # Landing page
 │   └── ResumeController.cs         # Upload, AskAI, Download, Clear
@@ -59,10 +63,16 @@ AIResumeAssistant/
 │   ├── Resume/
 │   │   └── Index.cshtml            # Chat-style AI assistant UI
 │   └── Shared/
-│       └── _Layout.cshtml          # App layout with gradient navbar
-└── wwwroot/
-    ├── css/site.css                # Custom styles
-    └── js/resume.js                # AJAX chat & upload logic
+│       ├── _Layout.cshtml          # App layout with gradient navbar
+│       └── _Layout.cshtml.css      # Scoped layout styles
+├── wwwroot/
+│   ├── css/site.css                # Custom styles + dark theme
+│   ├── favicon.svg                 # App icon
+│   └── js/
+│       ├── site.js                 # Night mode toggle logic
+│       └── resume.js               # AJAX chat & upload logic
+├── appsettings.json                # App configuration & AI model settings
+└── Program.cs                      # App entry point & service registration
 ```
 
 ## 🚀 Getting Started
@@ -106,6 +116,19 @@ And set your Gemini key:
 ```bash
 dotnet user-secrets set "Gemini:ApiKey" "YOUR_KEY"
 ```
+
+## 🚢 Deployment
+
+The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically builds and deploys to **Azure App Service** on every push to `main`.
+
+To set it up:
+
+1. Create an Azure Web App
+2. Download the **Publish Profile** from the Azure portal
+3. Add it as a GitHub repository secret named `AZURE_WEBAPP_PUBLISH_PROFILE`
+4. Update the `AZURE_WEBAPP_NAME` value in `deploy.yml` to match your app name
+5. Set your API key in Azure → **Configuration → Application settings**:
+   - Name: `Groq__ApiKey`, Value: your key
 
 ## 🏗️ Architecture Highlights
 
