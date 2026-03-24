@@ -10,12 +10,15 @@
     /* Make the resume page fill remaining viewport below the navbar */
     .chat-layout { height: calc(100vh - 56px); overflow: hidden; }
 
-    /* Sidebar width on desktop */
+    /* Sidebar width and height on desktop */
     @@media (min-width: 768px) {
         #sidebarMenu {
             width: 25%;
             min-width: 280px;
             max-width: 340px;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
         }
     }
 </style>
