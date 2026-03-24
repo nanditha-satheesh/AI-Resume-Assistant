@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using AIResumeAssistant.Models;
@@ -102,6 +103,83 @@ public class GeminiService : IOpenAIService
         {
             _logger.LogError(ex, "Error parsing Gemini API response");
             return OpenAIResult.Fail("Failed to parse AI response.");
+        }
+    }
+
+    public async IAsyncEnumerable<string> StreamChatCompletionAsync(
+        string systemPrompt, string userMessage,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        // Gemini uses streamGenerateContent for streaming
+        var requestBody = new
+        {
+            systemInstruction = new
+            {
+                parts = new[] { new { text = systemPrompt } }
+            },
+            contents = new[]
+            {
+                new
+                {
+                    role = "user",
+                    parts = new[] { new { text = userMessage } }
+                }
+            },
+            generationConfig = new
+            {
+                temperature = 0.7,
+                maxOutputTokens = 2048
+            }
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var url = $"v1beta/models/{_model}:streamGenerateContent?alt=sse&key={_apiKey}";
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initiating Gemini streaming request");
+            yield break;
+        }
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var reader = new StreamReader(stream);
+
+        while (!reader.EndOfStream && !ct.IsCancellationRequested)
+        {
+            var line = await reader.ReadLineAsync(ct);
+            if (line is null || !line.StartsWith("data: "))
+                continue;
+
+            var data = line["data: ".Length..];
+
+            string? text = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(data);
+                var candidates = doc.RootElement.GetProperty("candidates");
+                text = candidates[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse Gemini streaming chunk");
+            }
+
+            if (!string.IsNullOrEmpty(text))
+                yield return text;
         }
     }
 }

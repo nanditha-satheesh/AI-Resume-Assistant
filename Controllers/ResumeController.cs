@@ -1,50 +1,88 @@
+using System.Security.Claims;
+using AIResumeAssistant.Data;
 using AIResumeAssistant.Models;
+using AIResumeAssistant.Models.Domain;
+using AIResumeAssistant.Models.Dto;
 using AIResumeAssistant.PromptBuilder;
 using AIResumeAssistant.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 
 namespace AIResumeAssistant.Controllers;
 
+[Authorize]
 public class ResumeController : Controller
 {
     private readonly IPdfParserService _pdfParser;
     private readonly IOpenAIService _openAIService;
-    private readonly IResumeSessionService _sessionService;
+    private readonly IAtsService _atsService;
+    private readonly IFileStorageService _fileStorage;
+    private readonly AppDbContext _db;
     private readonly ILogger<ResumeController> _logger;
 
     public ResumeController(
         IPdfParserService pdfParser,
         IOpenAIService openAIService,
-        IResumeSessionService sessionService,
+        IAtsService atsService,
+        IFileStorageService fileStorage,
+        AppDbContext db,
         ILogger<ResumeController> logger)
     {
         _pdfParser = pdfParser;
         _openAIService = openAIService;
-        _sessionService = sessionService;
+        _atsService = atsService;
+        _fileStorage = fileStorage;
+        _db = db;
         _logger = logger;
     }
+
+    private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     /// <summary>
     /// Main page for the Resume Assistant.
     /// </summary>
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        var sessionId = GetOrCreateSessionId();
-        var chatHistory = _sessionService.GetChatHistory(sessionId);
-        var hasResume = _sessionService.GetResumeText(sessionId) != null;
+        var resume = await GetActiveResumeAsync();
+        var chatHistory = new List<ChatMessage>();
+
+        if (resume is not null)
+        {
+            var session = await _db.ChatSessions
+                .Where(s => s.ResumeId == resume.Id)
+                .OrderByDescending(s => s.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (session is not null)
+            {
+                chatHistory = await _db.ChatMessages
+                    .Where(m => m.SessionId == session.Id)
+                    .OrderBy(m => m.Timestamp)
+                    .Select(m => new ChatMessage
+                    {
+                        Role = m.Role,
+                        Content = m.Content,
+                        Timestamp = m.Timestamp
+                    })
+                    .ToListAsync();
+            }
+        }
 
         ViewBag.ChatHistory = chatHistory;
-        ViewBag.HasResume = hasResume;
+        ViewBag.HasResume = resume is not null;
         ViewBag.PromptModes = ResumePromptBuilder.GetAvailableModes();
 
         return View();
     }
 
     /// <summary>
-    /// Upload a PDF resume, extract text, and store it in the session.
+    /// Upload a PDF resume, extract text, and store it in the database.
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("upload")]
     public async Task<IActionResult> UploadResume(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -73,11 +111,52 @@ public class ResumeController : Controller
                 return Json(new AiResponse { Success = false, Error = "Could not extract text from the PDF. The file may be image-based or empty." });
             }
 
-            var sessionId = GetOrCreateSessionId();
-            _sessionService.ClearSession(sessionId);
-            _sessionService.StoreResumeText(sessionId, extractedText);
+            // Deactivate previous resumes for this user
+            var previousResumes = await _db.Resumes
+                .Where(r => r.UserId == UserId && r.IsActive)
+                .ToListAsync();
 
-            _logger.LogInformation("Resume uploaded successfully. Extracted {Length} characters.", extractedText.Length);
+            foreach (var prev in previousResumes)
+            {
+                prev.IsActive = false;
+            }
+
+            // Persist the original PDF file
+            using var saveStream = file.OpenReadStream();
+            var filePath = await _fileStorage.SaveFileAsync(saveStream, file.FileName);
+
+            // Create new resume record
+            var resume = new Resume
+            {
+                UserId = UserId,
+                FileName = file.FileName,
+                FilePath = filePath,
+                ExtractedText = extractedText,
+                IsActive = true
+            };
+
+            _db.Resumes.Add(resume);
+            await _db.SaveChangesAsync();
+
+            // Create initial version
+            _db.ResumeVersions.Add(new ResumeVersion
+            {
+                ResumeId = resume.Id,
+                VersionNumber = 1,
+                ExtractedText = extractedText,
+                ChangeNotes = "Initial upload"
+            });
+
+            // Create a chat session for this resume
+            _db.ChatSessions.Add(new ChatSession
+            {
+                ResumeId = resume.Id,
+                PromptMode = "Default"
+            });
+
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation("Resume uploaded by user {UserId}. Extracted {Length} characters.", UserId, extractedText.Length);
 
             return Json(new AiResponse
             {
@@ -97,6 +176,7 @@ public class ResumeController : Controller
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("ai")]
     public async Task<IActionResult> AskAI([FromBody] AskAiRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question))
@@ -104,22 +184,36 @@ public class ResumeController : Controller
             return Json(new AiResponse { Success = false, Error = "Please enter a question." });
         }
 
-        var sessionId = GetOrCreateSessionId();
-        var resumeText = _sessionService.GetResumeText(sessionId);
+        var resume = await GetActiveResumeAsync();
 
-        if (string.IsNullOrWhiteSpace(resumeText))
+        if (resume is null)
         {
             return Json(new AiResponse { Success = false, Error = "Please upload your resume first." });
         }
 
         try
         {
-            // Store user message in chat history
-            _sessionService.AddChatMessage(sessionId, new ChatMessage
+            // Get or create chat session
+            var session = await _db.ChatSessions
+                .Where(s => s.ResumeId == resume.Id)
+                .OrderByDescending(s => s.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (session is null)
             {
+                session = new ChatSession { ResumeId = resume.Id, PromptMode = "Default" };
+                _db.ChatSessions.Add(session);
+                await _db.SaveChangesAsync();
+            }
+
+            // Store user message
+            _db.ChatMessages.Add(new ChatMessageEntity
+            {
+                SessionId = session.Id,
                 Role = "user",
                 Content = request.Question
             });
+            await _db.SaveChangesAsync();
 
             // Validate prompt mode against allowed values
             var allowedModes = ResumePromptBuilder.GetAvailableModes().Keys;
@@ -127,7 +221,7 @@ public class ResumeController : Controller
 
             // Build prompts
             var systemPrompt = ResumePromptBuilder.BuildSystemPrompt(promptMode);
-            var userPrompt = ResumePromptBuilder.BuildUserPrompt(resumeText, request.Question);
+            var userPrompt = ResumePromptBuilder.BuildUserPrompt(resume.ExtractedText, request.Question);
 
             // Call OpenAI
             var aiResult = await _openAIService.GetChatCompletionAsync(systemPrompt, userPrompt);
@@ -137,12 +231,14 @@ public class ResumeController : Controller
                 return Json(new AiResponse { Success = false, Error = aiResult.Error });
             }
 
-            // Store AI response in chat history
-            _sessionService.AddChatMessage(sessionId, new ChatMessage
+            // Store AI response
+            _db.ChatMessages.Add(new ChatMessageEntity
             {
+                SessionId = session.Id,
                 Role = "assistant",
                 Content = aiResult.Content!
             });
+            await _db.SaveChangesAsync();
 
             return Json(new AiResponse { Success = true, Message = aiResult.Content });
         }
@@ -157,22 +253,48 @@ public class ResumeController : Controller
     /// Returns the chat history for the current session.
     /// </summary>
     [HttpGet]
-    public IActionResult GetChatHistory()
+    public async Task<IActionResult> GetChatHistory()
     {
-        var sessionId = GetOrCreateSessionId();
-        var history = _sessionService.GetChatHistory(sessionId);
-        return Json(history);
+        var resume = await GetActiveResumeAsync();
+        if (resume is null)
+            return Json(Array.Empty<ChatMessage>());
+
+        var session = await _db.ChatSessions
+            .Where(s => s.ResumeId == resume.Id)
+            .OrderByDescending(s => s.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (session is null)
+            return Json(Array.Empty<ChatMessage>());
+
+        var messages = await _db.ChatMessages
+            .Where(m => m.SessionId == session.Id)
+            .OrderBy(m => m.Timestamp)
+            .Select(m => new ChatMessage
+            {
+                Role = m.Role,
+                Content = m.Content,
+                Timestamp = m.Timestamp
+            })
+            .ToListAsync();
+
+        return Json(messages);
     }
 
     /// <summary>
-    /// Clears the current session (resume + chat history).
+    /// Clears the current session (deactivates resume and deletes chat history).
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult ClearSession()
+    public async Task<IActionResult> ClearSession()
     {
-        var sessionId = GetOrCreateSessionId();
-        _sessionService.ClearSession(sessionId);
+        var resume = await GetActiveResumeAsync();
+        if (resume is not null)
+        {
+            resume.IsActive = false;
+            await _db.SaveChangesAsync();
+        }
+
         return Json(new AiResponse { Success = true, Message = "Session cleared." });
     }
 
@@ -180,13 +302,26 @@ public class ResumeController : Controller
     /// Downloads the last AI response as a text file (e.g., cover letter).
     /// </summary>
     [HttpGet]
-    public IActionResult DownloadLastResponse()
+    public async Task<IActionResult> DownloadLastResponse()
     {
-        var sessionId = GetOrCreateSessionId();
-        var history = _sessionService.GetChatHistory(sessionId);
-        var lastAssistant = history.FindLast(m => m.Role == "assistant");
+        var resume = await GetActiveResumeAsync();
+        if (resume is null)
+            return NotFound("No AI response available to download.");
 
-        if (lastAssistant == null)
+        var session = await _db.ChatSessions
+            .Where(s => s.ResumeId == resume.Id)
+            .OrderByDescending(s => s.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (session is null)
+            return NotFound("No AI response available to download.");
+
+        var lastAssistant = await _db.ChatMessages
+            .Where(m => m.SessionId == session.Id && m.Role == "assistant")
+            .OrderByDescending(m => m.Timestamp)
+            .FirstOrDefaultAsync();
+
+        if (lastAssistant is null)
         {
             return NotFound("No AI response available to download.");
         }
@@ -195,24 +330,50 @@ public class ResumeController : Controller
         return File(bytes, "text/plain", "ai-response.txt");
     }
 
-    private string GetOrCreateSessionId()
+    /// <summary>
+    /// Downloads the original uploaded PDF for the active resume.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> DownloadResume()
     {
-        const string sessionCookieName = "ResumeSessionId";
+        var resume = await GetActiveResumeAsync();
+        if (resume is null || string.IsNullOrEmpty(resume.FilePath))
+            return NotFound("No resume file available to download.");
 
-        if (Request.Cookies.TryGetValue(sessionCookieName, out var sessionId) && !string.IsNullOrEmpty(sessionId))
+        var stream = await _fileStorage.GetFileAsync(resume.FilePath);
+        if (stream is null)
+            return NotFound("Resume file not found on server.");
+
+        return File(stream, "application/pdf", resume.FileName);
+    }
+
+    /// <summary>
+    /// Scores the active resume using ATS analysis, optionally against a job description.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [EnableRateLimiting("ai")]
+    public async Task<IActionResult> ScoreResume([FromBody] AtsRequest request)
+    {
+        var resume = await GetActiveResumeAsync();
+
+        if (resume is null)
         {
-            return sessionId;
+            return Json(new AtsScoreResult { Success = false, Error = "Please upload your resume first." });
         }
 
-        sessionId = Guid.NewGuid().ToString();
-        Response.Cookies.Append(sessionCookieName, sessionId, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddHours(24)
-        });
+        var result = await _atsService.ScoreResumeAsync(resume.Id, resume.ExtractedText, request?.JobDescription);
+        return Json(result);
+    }
 
-        return sessionId;
+    /// <summary>
+    /// Gets the currently active resume for the authenticated user.
+    /// </summary>
+    private async Task<Resume?> GetActiveResumeAsync()
+    {
+        return await _db.Resumes
+            .Where(r => r.UserId == UserId && r.IsActive)
+            .OrderByDescending(r => r.UploadedAt)
+            .FirstOrDefaultAsync();
     }
 }

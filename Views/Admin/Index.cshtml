@@ -1,0 +1,184 @@
+@model AIResumeAssistant.Models.Dto.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid py-4">
+    <h2 class="mb-1 fw-bold">📊 Admin Dashboard</h2>
+    <p class="text-muted mb-4">Platform analytics and user management</p>
+
+    @if (TempData["Success"] is string successMsg)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] is string errorMsg)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Info"] is string infoMsg)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @infoMsg
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 fw-bold text-primary">@Model.TotalUsers</div>
+                    <small class="text-muted">Total Users</small>
+                    <div class="text-success small mt-1">+@Model.NewUsersToday today</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 fw-bold text-info">@Model.TotalResumes</div>
+                    <small class="text-muted">Resumes Uploaded</small>
+                    <div class="text-success small mt-1">+@Model.ResumesToday today</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 fw-bold text-warning">@Model.TotalMessages</div>
+                    <small class="text-muted">Chat Messages</small>
+                    <div class="text-success small mt-1">+@Model.MessagesToday today</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 fw-bold text-danger">@Model.TotalAtsScans</div>
+                    <small class="text-muted">ATS Scans</small>
+                    <div class="small mt-1">Avg Score: <strong>@Model.AverageAtsScore</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Uploads -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">📄 Recent Uploads</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>File</th>
+                                    <th>Characters</th>
+                                    <th>When</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var upload in Model.RecentUploads)
+                                {
+                                    <tr>
+                                        <td class="small">@upload.UserEmail</td>
+                                        <td class="small text-truncate" style="max-width: 200px;" title="@upload.FileName">@upload.FileName</td>
+                                        <td class="small">@upload.TextLength.ToString("N0")</td>
+                                        <td class="small text-muted">@upload.UploadedAt.ToString("MMM dd, HH:mm")</td>
+                                    </tr>
+                                }
+                                @if (!Model.RecentUploads.Any())
+                                {
+                                    <tr><td colspan="4" class="text-center text-muted py-3">No uploads yet</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Users -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">🏆 Top Users</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th class="text-center">Resumes</th>
+                                    <th class="text-center">Messages</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.TopUsers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="small fw-semibold">@user.FullName</div>
+                                            <div class="small text-muted">@user.Email</div>
+                                        </td>
+                                        <td class="text-center">@user.ResumeCount</td>
+                                        <td class="text-center">@user.MessageCount</td>
+                                        <td>
+                                            <form asp-action="PromoteToAdmin" method="post" class="d-inline">
+                                                <input type="hidden" name="userId" value="@user.UserId" />
+                                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Promote to Admin"
+                                                        onclick="return confirm('Promote @user.Email to Admin?');">
+                                                    ⬆️
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!Model.TopUsers.Any())
+                                {
+                                    <tr><td colspan="4" class="text-center text-muted py-3">No users yet</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h5 class="fw-bold text-primary">@Model.TotalChatSessions</h5>
+                            <small class="text-muted">Chat Sessions</small>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="fw-bold text-primary">
+                                @(Model.TotalUsers > 0 ? Math.Round((double)Model.TotalMessages / Model.TotalUsers, 1) : 0)
+                            </h5>
+                            <small class="text-muted">Avg Messages per User</small>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="fw-bold text-primary">
+                                @(Model.TotalUsers > 0 ? Math.Round((double)Model.TotalResumes / Model.TotalUsers, 1) : 0)
+                            </h5>
+                            <small class="text-muted">Avg Resumes per User</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

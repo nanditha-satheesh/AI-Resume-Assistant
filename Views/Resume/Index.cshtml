@@ -92,13 +92,36 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- ATS Score -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body p-3">
+                            <h6 class="card-title fw-bold mb-2">📊 ATS Score</h6>
+                            <textarea class="form-control form-control-sm mb-2" id="jobDescription" rows="3"
+                                      placeholder="Paste job description (optional)..."></textarea>
+                            <button class="btn btn-outline-info btn-sm w-100 rounded-pill" id="btnAtsScore" onclick="scoreResume()">
+                                <span id="atsSpinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                                Analyze Resume
+                            </button>
+                            <div id="atsResult" class="mt-2 small"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Session Controls -->
                 <div class="p-3 border-top">
                     <div class="d-grid gap-2">
+                        @if (hasResume)
+                        {
+                            <button class="btn btn-outline-info btn-sm rounded-pill" onclick="window.location.href='/Resume/DownloadResume'">
+                                📄 Download Resume PDF
+                            </button>
+                        }
                         <button class="btn btn-outline-success btn-sm rounded-pill" id="btnDownload" onclick="downloadResponse()" disabled>
                             ⬇️ Download Last Response
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="exportChatMarkdown()">
+                            📑 Export Chat as Markdown
                         </button>
                         <button class="btn btn-outline-danger btn-sm rounded-pill" onclick="clearSession()">
                             🗑️ Clear Session
@@ -197,6 +220,16 @@
                         </div>
                     </div>
                 </div>
+
+<!-- Toast container for notifications -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="rateToast" class="toast align-items-center text-bg-warning border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="rateToastBody">Too many requests. Please wait a moment.</div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script src="~/js/resume.js" asp-append-version="true"></script>

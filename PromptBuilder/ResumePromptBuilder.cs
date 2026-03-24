@@ -64,4 +64,45 @@ public static class ResumePromptBuilder
             { "CareerCoach", "Career Coach" }
         };
     }
+
+    /// <summary>
+    /// Builds a prompt for ATS scoring with optional job description matching.
+    /// </summary>
+    public static string BuildAtsScorePrompt(string resumeText, string? jobDescription = null)
+    {
+        var jdSection = string.IsNullOrWhiteSpace(jobDescription)
+            ? "No specific job description provided. Score against general best practices for a professional resume."
+            : $"""
+                Target Job Description:
+                ---
+                {jobDescription}
+                ---
+                """;
+
+        return $$"""
+            Analyze this resume and return a JSON response ONLY (no markdown, no explanation, no code blocks):
+            {
+              "overallScore": <0-100>,
+              "formatScore": <0-100>,
+              "keywordScore": <0-100>,
+              "impactScore": <0-100>,
+              "missingSkills": ["skill1", "skill2"],
+              "matchPercentage": <0-100 if job description provided, otherwise null>,
+              "suggestions": ["suggestion1", "suggestion2", "suggestion3"],
+              "strongPoints": ["point1", "point2"]
+            }
+
+            Scoring criteria:
+            - formatScore: Layout quality, proper sections (Contact, Summary, Experience, Education, Skills), readability, ATS-parseable format
+            - keywordScore: Relevant industry keywords, action verbs, technical terms, tools and technologies
+            - impactScore: Quantified achievements, metrics, measurable results, specific accomplishments
+
+            {{jdSection}}
+
+            Resume:
+            ---
+            {{resumeText}}
+            ---
+            """;
+    }
 }

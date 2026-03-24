@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using AIResumeAssistant.Models;
@@ -92,6 +93,77 @@ public class GroqService : IOpenAIService
         {
             _logger.LogError(ex, "Error parsing Groq API response");
             return OpenAIResult.Fail("Failed to parse AI response.");
+        }
+    }
+
+    public async IAsyncEnumerable<string> StreamChatCompletionAsync(
+        string systemPrompt, string userMessage,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var requestBody = new
+        {
+            model = _model,
+            messages = new[]
+            {
+                new { role = "system", content = systemPrompt },
+                new { role = "user", content = userMessage }
+            },
+            max_tokens = 2048,
+            temperature = 0.7,
+            stream = true
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var request = new HttpRequestMessage(HttpMethod.Post, "openai/v1/chat/completions")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initiating Groq streaming request");
+            yield break;
+        }
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var reader = new StreamReader(stream);
+
+        while (!reader.EndOfStream && !ct.IsCancellationRequested)
+        {
+            var line = await reader.ReadLineAsync(ct);
+            if (line is null || !line.StartsWith("data: "))
+                continue;
+
+            var data = line["data: ".Length..];
+            if (data == "[DONE]")
+                break;
+
+            string? text = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(data);
+                var delta = doc.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("delta");
+
+                if (delta.TryGetProperty("content", out var contentProp))
+                {
+                    text = contentProp.GetString();
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse streaming chunk");
+            }
+
+            if (!string.IsNullOrEmpty(text))
+                yield return text;
         }
     }
 }

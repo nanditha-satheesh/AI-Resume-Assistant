@@ -37,5 +37,13 @@ artifacts/
 .DS_Store
 Thumbs.db
 
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Uploaded files
+AppData/uploads/
+
 # Misc
 appsettings.Development.json

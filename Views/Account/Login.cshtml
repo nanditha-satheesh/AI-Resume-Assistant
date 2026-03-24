@@ -1,0 +1,60 @@
+@model AIResumeAssistant.Models.Dto.LoginRequest
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold" style="color: #0f3460;">🔐 Welcome Back</h2>
+                        <p class="text-muted">Sign in to your AI Resume Assistant account</p>
+                    </div>
+
+                    @if (TempData["Error"] is string error)
+                    {
+                        <div class="alert alert-danger py-2">@error</div>
+                    }
+
+                    @if (TempData["Success"] is string success)
+                    {
+                        <div class="alert alert-success py-2">@success</div>
+                    }
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <form asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post">
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                            <input asp-for="Email" class="form-control rounded-3" placeholder="you@example.com" autofocus />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                            <input asp-for="Password" class="form-control rounded-3" placeholder="••••••••" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label">Remember me</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 rounded-3 py-2 fw-semibold"
+                                style="background: linear-gradient(135deg, #0f3460, #1a1a2e); border: none;">
+                            Sign In
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <span class="text-muted">Don't have an account?</span>
+                        <a asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl" class="fw-semibold text-decoration-none">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
